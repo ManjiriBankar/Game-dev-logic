@@ -1,0 +1,8 @@
+player_id,match_id,region,device,ping,score,kills,deaths,match_duration_seconds
+P001,M001,India,Android,55,3200,18,4,420
+P002,M001,India,Android,70,2800,14,5,430
+P003,M002,SEA,iOS,90,99000,250,0,60
+P004,M002,India,PC,40,3500,20,6,460
+P005,M003,Europe,Android,130,1200,6,8,390
+P006,M004,India,PC,45,4100,22,2,410
+P006,M004,India,PC,45,3100,15,3,400

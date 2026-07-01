@@ -1,0 +1,60 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pycache
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ── Distribution / packaging ──────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.log
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+.DS_Store
+Thumbs.db
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+desktop.ini
+$RECYCLE.BIN/
+
+# ── Project-specific docs (internal / study material, not for deployment) ─────
+study.md
+flow.md
+documentation.md
+
+# ── Test / scratch scripts (not production code) ──────────────────────────────
+test_logic.py
+test_detection.py
+
+# ── Data (CSV grows with submitted scores — exclude from version control) ─────
+# Seed file is tracked; runtime-appended CSV is not.
+# Comment this out if you want to track the data file.
+# data/matches.csv
+
+# ── Uvicorn / server logs ─────────────────────────────────────────────────────
+*.log
+uvicorn.log

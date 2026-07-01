@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game Ops Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d0f1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1d2e 0%, #16213e 100%);
+      border-bottom: 1px solid #2d3561;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: #7c83fd; letter-spacing: .5px; }
+    header h1 span { color: #e2e8f0; }
+    #last-updated { font-size: .75rem; color: #64748b; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 20px 32px 0;
+      border-bottom: 1px solid #1e2235;
+    }
+    .tab-btn {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      background: transparent;
+      color: #64748b;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: all .2s;
+      font-weight: 500;
+    }
+    .tab-btn:hover { color: #a5b4fc; background: #1e2235; }
+    .tab-btn.active { background: #1e2235; color: #7c83fd; border-bottom: 2px solid #7c83fd; }
+
+    /* ── Tab panels ── */
+    .tab-panel { display: none; padding: 28px 32px; }
+    .tab-panel.active { display: block; }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: #1a1d2e;
+      border: 1px solid #2d3561;
+      border-radius: 12px;
+      padding: 16px 24px;
+      min-width: 140px;
+      flex: 1;
+    }
+    .stat-card .label { font-size: .72rem; color: #64748b; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+    .stat-card .value { font-size: 1.9rem; font-weight: 700; color: #7c83fd; }
+    .stat-card.danger .value  { color: #f87171; }
+    .stat-card.warning .value { color: #fbbf24; }
+    .stat-card.success .value { color: #34d399; }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar select, .filter-bar input {
+      background: #1a1d2e;
+      border: 1px solid #2d3561;
+      border-radius: 8px;
+      color: #e2e8f0;
+      padding: 8px 14px;
+      font-size: .875rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .filter-bar select:focus, .filter-bar input:focus { border-color: #7c83fd; }
+    .filter-bar label { font-size: .8rem; color: #64748b; }
+
+    .btn-refresh {
+      margin-left: auto;
+      background: #7c83fd;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: .875rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background .2s;
+    }
+    .btn-refresh:hover { background: #6366f1; }
+    .btn-refresh:active { transform: scale(.97); }
+
+    /* ── Submit form ── */
+    .submit-form {
+      background: #1a1d2e;
+      border: 1px solid #2d3561;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .submit-form h3 { font-size: .95rem; color: #a5b4fc; margin-bottom: 16px; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .form-group label { display: block; font-size: .72rem; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
+    .form-group input, .form-group select {
+      width: 100%;
+      background: #0d0f1a;
+      border: 1px solid #2d3561;
+      border-radius: 8px;
+      color: #e2e8f0;
+      padding: 8px 12px;
+      font-size: .875rem;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #7c83fd; }
+    .btn-submit {
+      background: #34d399;
+      color: #0d0f1a;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 24px;
+      font-size: .875rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-submit:hover { background: #10b981; }
+    #submit-msg { margin-left: 12px; font-size: .82rem; }
+    #submit-msg.ok  { color: #34d399; }
+    #submit-msg.err { color: #f87171; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #1e2235; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th {
+      background: #161928;
+      color: #64748b;
+      text-transform: uppercase;
+      font-size: .7rem;
+      letter-spacing: .8px;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #1e2235;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #1a1d2e; transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1a1d2e; }
+    tbody td { padding: 12px 16px; vertical-align: middle; }
+
+    /* rank badge */
+    .rank { font-weight: 700; }
+    .rank-1 { color: #fbbf24; }
+    .rank-2 { color: #94a3b8; }
+    .rank-3 { color: #cd7c2f; }
+
+    /* risk badge */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .4px;
+    }
+    .badge-HIGH    { background: #3b1111; color: #f87171; border: 1px solid #7f1d1d; }
+    .badge-MEDIUM  { background: #3b2a00; color: #fbbf24; border: 1px solid #78350f; }
+    .badge-LOW     { background: #1e2f1e; color: #6ee7b7; border: 1px solid #065f46; }
+    .badge-full    { background: #1e2f1e; color: #34d399; border: 1px solid #065f46; }
+    .badge-partial { background: #2d2416; color: #fbbf24; border: 1px solid #78350f; }
+
+    /* score bar */
+    .score-bar-wrap { display: flex; align-items: center; gap: 10px; min-width: 120px; }
+    .score-bar-bg { flex: 1; height: 6px; background: #1e2235; border-radius: 4px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,#7c83fd,#a5b4fc); transition: width .4s; }
+
+    /* reasons list in flagged table */
+    .reasons { list-style: none; }
+    .reasons li { font-size: .75rem; color: #94a3b8; margin-top: 2px; }
+    .reasons li::before { content: "→ "; color: #f87171; }
+
+    /* matchmaking group card */
+    .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .group-card {
+      background: #1a1d2e;
+      border: 1px solid #2d3561;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .group-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .group-card-header h4 { color: #a5b4fc; font-size: .9rem; }
+    .group-meta { font-size: .72rem; color: #64748b; margin-bottom: 12px; }
+    .group-meta span { color: #94a3b8; }
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px solid #1e2235;
+      font-size: .82rem;
+    }
+    .player-row:last-child { border-bottom: none; }
+    .player-id { font-weight: 600; color: #e2e8f0; }
+    .player-ping { color: #64748b; font-size: .75rem; }
+    .player-score { color: #7c83fd; font-weight: 600; }
+
+    /* loading / empty */
+    .loading { text-align: center; padding: 48px; color: #64748b; }
+    .loading::after { content: ""; display: inline-block; width: 18px; height: 18px;
+      border: 2px solid #2d3561; border-top-color: #7c83fd;
+      border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-left: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { text-align: center; padding: 48px; color: #64748b; font-size: .9rem; }
+
+    /* region tabs inside leaderboard */
+    .region-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .region-btn {
+      padding: 5px 14px; border-radius: 20px; border: 1px solid #2d3561;
+      background: transparent; color: #64748b; font-size: .8rem; cursor: pointer; transition: all .2s;
+    }
+    .region-btn:hover { border-color: #7c83fd; color: #a5b4fc; }
+    .region-btn.active { background: #7c83fd; color: #fff; border-color: #7c83fd; }
+
+    @media (max-width: 600px) {
+      header { padding: 14px 16px; }
+      .tabs, .tab-panel { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎮 Game Ops <span>Dashboard</span></h1>
+  <span id="last-updated">Not loaded yet</span>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('leaderboard',this)">🏆 Leaderboard</button>
+  <button class="tab-btn" onclick="switchTab('flagged',this)">🚨 Flagged Players</button>
+  <button class="tab-btn" onclick="switchTab('matchmaking',this)">⚔️ Matchmaking</button>
+  <button class="tab-btn" onclick="switchTab('submit',this)">➕ Submit Score</button>
+</div>
+
+<!-- ══ LEADERBOARD TAB ══════════════════════════════════════════════════════ -->
+<div id="tab-leaderboard" class="tab-panel active">
+  <div class="stats-row" id="lb-stats"></div>
+
+  <div class="filter-bar">
+    <div>
+      <label>View</label><br>
+      <select id="lb-view" onchange="renderLeaderboard()">
+        <option value="global">Global</option>
+        <option value="region">By Region</option>
+      </select>
+    </div>
+    <div id="region-tab-wrap" style="display:none">
+      <label>Region</label><br>
+      <div class="region-tabs" id="region-tabs"></div>
+    </div>
+    <button class="btn-refresh" onclick="loadAll()">↻ Refresh</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Player</th>
+          <th>Region</th>
+          <th>Device</th>
+          <th>Score</th>
+          <th>Kills</th>
+          <th>Deaths</th>
+          <th>Matches</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ FLAGGED TAB ══════════════════════════════════════════════════════════ -->
+<div id="tab-flagged" class="tab-panel">
+  <div class="stats-row" id="flag-stats"></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Match</th>
+          <th>Region</th>
+          <th>Risk</th>
+          <th>Detected By</th>
+          <th>Evidence</th>
+          <th>Score</th>
+          <th>Kills</th>
+          <th>Deaths</th>
+          <th>Duration</th>
+          <th>Reasons</th>
+        </tr>
+      </thead>
+      <tbody id="flag-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ MATCHMAKING TAB ══════════════════════════════════════════════════════ -->
+<div id="tab-matchmaking" class="tab-panel">
+  <div class="stats-row" id="mm-stats"></div>
+  <div class="filter-bar">
+    <div>
+      <label>Filter region</label><br>
+      <select id="mm-region-filter" onchange="renderMatchmaking()">
+        <option value="all">All Regions</option>
+      </select>
+    </div>
+    <div>
+      <label>Filter ping tier</label><br>
+      <select id="mm-ping-filter" onchange="renderMatchmaking()">
+        <option value="all">All Tiers</option>
+        <option value="low">Low (≤80ms)</option>
+        <option value="mid">Mid (81–150ms)</option>
+        <option value="high">High (&gt;150ms)</option>
+      </select>
+    </div>
+    <button class="btn-refresh" onclick="loadAll()">↻ Refresh</button>
+  </div>
+  <div class="groups-grid" id="mm-groups"></div>
+</div>
+
+<!-- ══ SUBMIT TAB ══════════════════════════════════════════════════════════ -->
+<div id="tab-submit" class="tab-panel">
+  <div class="submit-form">
+    <h3>Submit a New Match Score</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Player ID</label><input id="f-player_id" placeholder="P006" /></div>
+      <div class="form-group"><label>Match ID</label><input id="f-match_id" placeholder="M004" /></div>
+      <div class="form-group">
+        <label>Region</label>
+        <select id="f-region">
+          <option>India</option><option>SEA</option><option>Europe</option>
+          <option>NA</option><option>SA</option><option>ME</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Device</label>
+        <select id="f-device">
+          <option>Android</option><option>iOS</option><option>PC</option><option>Console</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ping (ms)</label><input id="f-ping" type="number" min="0" placeholder="55" /></div>
+      <div class="form-group"><label>Score</label><input id="f-score" type="number" min="0" placeholder="3200" /></div>
+      <div class="form-group"><label>Kills</label><input id="f-kills" type="number" min="0" placeholder="18" /></div>
+      <div class="form-group"><label>Deaths</label><input id="f-deaths" type="number" min="0" placeholder="4" /></div>
+      <div class="form-group"><label>Duration (sec)</label><input id="f-duration" type="number" min="1" placeholder="420" /></div>
+    </div>
+    <button class="btn-submit" onclick="submitScore()">Submit Score</button>
+    <span id="submit-msg"></span>
+  </div>
+
+  <!-- live players table -->
+  <div class="filter-bar">
+    <div>
+      <label>Filter by region</label><br>
+      <select id="players-region-filter" onchange="loadPlayers()">
+        <option value="">All Regions</option>
+      </select>
+    </div>
+    <button class="btn-refresh" onclick="loadPlayers()">↻ Refresh Players</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Player</th><th>Match</th><th>Region</th><th>Device</th>
+          <th>Ping</th><th>Score</th><th>Kills</th><th>Deaths</th><th>Duration</th>
+        </tr>
+      </thead>
+      <tbody id="players-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const API = '';   // same origin — FastAPI serves both UI and API
+  let _lb = null, _flagged = null, _mm = null, _players = null;
+  let _activeRegion = 'all';
+
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── Fetch helpers ──────────────────────────────────────────────────────────
+  async function get(path) {
+    const r = await fetch(API + path);
+    if (!r.ok) throw new Error(r.statusText);
+    return r.json();
+  }
+
+  function setBody(id, html) {
+    document.getElementById(id).innerHTML = html;
+  }
+
+  function ts() {
+    document.getElementById('last-updated').textContent =
+      'Updated ' + new Date().toLocaleTimeString();
+  }
+
+  // ── Load everything ────────────────────────────────────────────────────────
+  async function loadAll() {
+    setBody('lb-body',   '<tr><td colspan="8" class="loading">Loading</td></tr>');
+    setBody('flag-body', '<tr><td colspan="11" class="loading">Loading</td></tr>');
+    setBody('mm-groups', '<div class="loading">Loading</div>');
+
+    [_lb, _flagged, _mm] = await Promise.all([
+      get('/leaderboard'),
+      get('/flagged-players'),
+      get('/matchmaking'),
+    ]);
+
+    renderLeaderboard();
+    renderFlagged();
+    renderMatchmaking();
+    populateMmRegionFilter();
+    ts();
+  }
+
+  async function loadPlayers() {
+    const region = document.getElementById('players-region-filter').value;
+    const url = region ? `/players?region=${encodeURIComponent(region)}` : '/players';
+    _players = await get(url);
+    renderPlayers();
+  }
+
+  // ── Leaderboard ────────────────────────────────────────────────────────────
+  function renderLeaderboard() {
+    if (!_lb) return;
+    const view = document.getElementById('lb-view').value;
+    const regionWrap = document.getElementById('region-tab-wrap');
+
+    // Stats row
+    const maxScore = Math.max(..._lb.leaderboard.map(p => p.total_score), 1);
+    document.getElementById('lb-stats').innerHTML = `
+      <div class="stat-card success"><div class="label">Ranked Players</div><div class="value">${_lb.total_ranked}</div></div>
+      <div class="stat-card danger"><div class="label">Flagged (excluded)</div><div class="value">${_lb.total_flagged}</div></div>
+      <div class="stat-card"><div class="label">Top Score</div><div class="value">${_lb.leaderboard[0]?.total_score?.toLocaleString() ?? '—'}</div></div>
+      <div class="stat-card"><div class="label">Top Player</div><div class="value" style="font-size:1.2rem">${_lb.leaderboard[0]?.player_id ?? '—'}</div></div>
+    `;
+
+    if (view === 'global') {
+      regionWrap.style.display = 'none';
+      setBody('lb-body', _lb.leaderboard.map(p => playerRow(p, p.rank, maxScore)).join(''));
+    } else {
+      regionWrap.style.display = 'block';
+      loadRegionLeaderboard();
+    }
+  }
+
+  async function loadRegionLeaderboard() {
+    const data = await get('/leaderboard/region');
+    const regions = Object.keys(data.region_leaderboards);
+    const tabsEl = document.getElementById('region-tabs');
+
+    // Build region buttons once
+    tabsEl.innerHTML = regions.map(r =>
+      `<button class="region-btn ${r===_activeRegion||(_activeRegion==='all'&&r===regions[0])?'active':''}"
+        onclick="selectRegion('${r}',this)">${r}</button>`
+    ).join('');
+
+    if (_activeRegion === 'all') _activeRegion = regions[0];
+
+    const players = data.region_leaderboards[_activeRegion] || [];
+    const maxScore = Math.max(...players.map(p => p.total_score), 1);
+    setBody('lb-body', players.map(p => playerRow(p, p.regional_rank, maxScore)).join(''));
+
+    // Store for region switch
+    window._regionData = data.region_leaderboards;
+  }
+
+  function selectRegion(region, btn) {
+    _activeRegion = region;
+    document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const players = window._regionData?.[region] || [];
+    const maxScore = Math.max(...players.map(p => p.total_score), 1);
+    setBody('lb-body', players.map(p => playerRow(p, p.regional_rank, maxScore)).join(''));
+  }
+
+  function playerRow(p, rank, maxScore) {
+    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+    const pct = Math.round((p.total_score / maxScore) * 100);
+    return `<tr>
+      <td><span class="rank ${rankClass}">${medal} ${rank}</span></td>
+      <td><strong>${p.player_id}</strong></td>
+      <td>${p.region}</td>
+      <td>${p.device}</td>
+      <td>
+        <div class="score-bar-wrap">
+          <span>${p.total_score.toLocaleString()}</span>
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+      </td>
+      <td>${p.total_kills}</td>
+      <td>${p.total_deaths}</td>
+      <td>${p.matches_played}</td>
+    </tr>`;
+  }
+</script>
+
+<script>
+  // ── Flagged Players ────────────────────────────────────────────────────────
+  function renderFlagged() {
+    if (!_flagged) return;
+
+    document.getElementById('flag-stats').innerHTML = `
+      <div class="stat-card danger"><div class="label">Total Flagged</div><div class="value">${_flagged.total_flagged}</div></div>
+      <div class="stat-card danger"><div class="label">HIGH Risk</div><div class="value">${_flagged.high_risk}</div></div>
+      <div class="stat-card warning"><div class="label">MEDIUM Risk</div><div class="value">${_flagged.medium_risk}</div></div>
+      <div class="stat-card success"><div class="label">LOW (watch-list)</div><div class="value">${_flagged.low_risk}</div></div>
+    `;
+
+    if (_flagged.flagged_players.length === 0) {
+      setBody('flag-body', '<tr><td colspan="11" class="empty">No suspicious players detected ✅</td></tr>');
+      return;
+    }
+
+    setBody('flag-body', _flagged.flagged_players.map(f => {
+      const allReasons = [...(f.rule_hits||[]), ...(f.zscore_hits||[])];
+      const reasonsHtml = allReasons.map(r =>
+        `<li>${r.replace(/\[R\d\]|\[Z\]/g,'').trim()}</li>`
+      ).join('');
+      return `<tr>
+        <td><strong>${f.player_id}</strong></td>
+        <td>${f.match_id}</td>
+        <td>${f.region}</td>
+        <td><span class="badge badge-${f.risk_level}">${f.risk_level}</span></td>
+        <td style="font-size:.75rem;color:#a5b4fc">${f.detected_by || '—'}</td>
+        <td style="color:#fbbf24;font-weight:700">${f.total_evidence}</td>
+        <td>${f.score.toLocaleString()}</td>
+        <td>${f.kills}</td>
+        <td>${f.deaths}</td>
+        <td>${f.match_duration_seconds}s</td>
+        <td><ul class="reasons">${reasonsHtml}</ul></td>
+      </tr>`;
+    }).join(''));
+  }
+
+  // ── Matchmaking ────────────────────────────────────────────────────────────
+  function populateMmRegionFilter() {
+    if (!_mm) return;
+    const regions = [...new Set(_mm.groups.map(g => g.region))];
+    const sel = document.getElementById('mm-region-filter');
+    sel.innerHTML = '<option value="all">All Regions</option>' +
+      regions.map(r => `<option value="${r}">${r}</option>`).join('');
+  }
+
+  function renderMatchmaking() {
+    if (!_mm) return;
+    const regionFilter = document.getElementById('mm-region-filter').value;
+    const pingFilter   = document.getElementById('mm-ping-filter').value;
+
+    const full   = _mm.groups.filter(g => g.status === 'full').length;
+    const partial = _mm.groups.filter(g => g.status === 'partial').length;
+
+    document.getElementById('mm-stats').innerHTML = `
+      <div class="stat-card"><div class="label">Total Groups</div><div class="value">${_mm.total_groups}</div></div>
+      <div class="stat-card success"><div class="label">Full Groups</div><div class="value">${full}</div></div>
+      <div class="stat-card warning"><div class="label">Partial Groups</div><div class="value">${partial}</div></div>
+      <div class="stat-card danger"><div class="label">Excluded (flagged)</div><div class="value">${_mm.flagged_players_excluded.length}</div></div>
+    `;
+
+    let groups = _mm.groups;
+    if (regionFilter !== 'all') groups = groups.filter(g => g.region === regionFilter);
+    if (pingFilter   !== 'all') groups = groups.filter(g => g.ping_tier === pingFilter);
+
+    if (groups.length === 0) {
+      document.getElementById('mm-groups').innerHTML =
+        '<div class="empty">No groups match the selected filters.</div>';
+      return;
+    }
+
+    document.getElementById('mm-groups').innerHTML = groups.map(g => {
+      const pingColors = { low:'#34d399', mid:'#fbbf24', high:'#f87171' };
+      const pingColor  = pingColors[g.ping_tier] || '#94a3b8';
+      const playersHtml = g.players.map(p => `
+        <div class="player-row">
+          <span class="player-id">${p.player_id}</span>
+          <span class="player-ping">${p.device} · ${p.ping}ms</span>
+          <span class="player-score">${p.avg_score.toLocaleString()} avg</span>
+        </div>`).join('');
+      return `
+        <div class="group-card">
+          <div class="group-card-header">
+            <h4>${g.group_id}</h4>
+            <span class="badge badge-${g.status}">${g.status}</span>
+          </div>
+          <div class="group-meta">
+            📍 ${g.region} &nbsp;·&nbsp;
+            <span style="color:${pingColor}">● ${g.ping_tier} ping</span> &nbsp;·&nbsp;
+            <span>${g.player_count} / ${_mm.group_size_target} players</span>
+          </div>
+          ${playersHtml}
+        </div>`;
+    }).join('');
+  }
+
+  // ── Submit Score ───────────────────────────────────────────────────────────
+  async function submitScore() {
+    const msg = document.getElementById('submit-msg');
+    const body = {
+      player_id:              document.getElementById('f-player_id').value.trim(),
+      match_id:               document.getElementById('f-match_id').value.trim(),
+      region:                 document.getElementById('f-region').value,
+      device:                 document.getElementById('f-device').value,
+      ping:                   +document.getElementById('f-ping').value,
+      score:                  +document.getElementById('f-score').value,
+      kills:                  +document.getElementById('f-kills').value,
+      deaths:                 +document.getElementById('f-deaths').value,
+      match_duration_seconds: +document.getElementById('f-duration').value,
+    };
+    if (!body.player_id || !body.match_id || !body.score) {
+      msg.className = 'err'; msg.textContent = 'Player ID, Match ID and Score are required.'; return;
+    }
+    try {
+      const r = await fetch(API + '/submit-score', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(JSON.stringify(e.detail)); }
+      msg.className = 'ok'; msg.textContent = '✓ Score submitted!';
+      loadPlayers();
+      setTimeout(loadAll, 400);
+    } catch(e) {
+      msg.className = 'err'; msg.textContent = '✗ ' + e.message;
+    }
+  }
+
+  // ── Players raw table ──────────────────────────────────────────────────────
+  function renderPlayers() {
+    if (!_players) return;
+    if (_players.records.length === 0) {
+      setBody('players-body', '<tr><td colspan="9" class="empty">No records found.</td></tr>');
+      return;
+    }
+    setBody('players-body', _players.records.map(r => `<tr>
+      <td><strong>${r.player_id}</strong></td>
+      <td>${r.match_id}</td>
+      <td>${r.region}</td>
+      <td>${r.device}</td>
+      <td>${r.ping}ms</td>
+      <td>${r.score.toLocaleString()}</td>
+      <td>${r.kills}</td>
+      <td>${r.deaths}</td>
+      <td>${r.match_duration_seconds}s</td>
+    </tr>`).join(''));
+
+    // populate region filter
+    const regions = [...new Set(_players.records.map(r => r.region))];
+    const sel = document.getElementById('players-region-filter');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Regions</option>' +
+      regions.map(r => `<option ${r===cur?'selected':''} value="${r}">${r}</option>`).join('');
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  loadAll();
+  loadPlayers();
+</script>
+</body>
+</html>
